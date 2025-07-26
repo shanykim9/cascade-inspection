@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}캐스케이드 시스템 점검{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 알림 메시지 -->
+    <div id="flash-messages" class="fixed top-0 left-0 right-0 z-50">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} bg-{% if category == 'error' %}red{% elif category == 'success' %}green{% elif category == 'info' %}blue{% else %}yellow{% endif %}-100 border-l-4 border-{% if category == 'error' %}red{% elif category == 'success' %}green{% elif category == 'info' %}blue{% else %}yellow{% endif %}-500 text-{% if category == 'error' %}red{% elif category == 'success' %}green{% elif category == 'info' %}blue{% else %}yellow{% endif %}-700 p-4 mb-4 mx-4 mt-4 rounded shadow-lg">
+                        <div class="flex items-center">
+                            <i data-feather="{% if category == 'error' %}alert-circle{% elif category == 'success' %}check-circle{% elif category == 'info' %}info{% else %}alert-triangle{% endif %}" class="w-5 h-5 mr-2"></i>
+                            <span>{{ message }}</span>
+                            <button onclick="this.parentElement.parentElement.remove()" class="ml-auto">
+                                <i data-feather="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="{% if current_user.is_authenticated %}pt-16{% else %}pt-0{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 네비게이션 바 (로그인 시만 표시) -->
+    {% if current_user.is_authenticated %}
+    <nav class="fixed top-0 left-0 right-0 bg-white shadow-md z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-800">캐스케이드 시스템 점검</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-600">
+                        {{ current_user.name }}님 
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{% if current_user.role == 'admin' %}red{% elif current_user.role == 'download' %}blue{% else %}green{% endif %}-100 text-{% if current_user.role == 'admin' %}red{% elif current_user.role == 'download' %}blue{% else %}green{% endif %}-800">
+                            {% if current_user.role == 'admin' %}관리자{% elif current_user.role == 'download' %}다운로드{% else %}입력{% endif %}
+                        </span>
+                    </span>
+                    <a href="{{ url_for('logout') }}" class="text-gray-600 hover:text-gray-800 flex items-center">
+                        <i data-feather="log-out" class="w-4 h-4 mr-1"></i>
+                        로그아웃
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        // Feather icons 초기화
+        feather.replace();
+        
+        // 플래시 메시지 자동 숨김
+        setTimeout(() => {
+            const flashMessages = document.querySelectorAll('#flash-messages .alert');
+            flashMessages.forEach(msg => {
+                msg.style.transition = 'opacity 0.5s ease-out';
+                msg.style.opacity = '0';
+                setTimeout(() => msg.remove(), 500);
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

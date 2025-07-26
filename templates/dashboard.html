@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}대시보드 - 캐스케이드 시스템 점검{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- 헤더 섹션 -->
+    <div class="px-4 py-6 sm:px-0">
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        <i data-feather="home" class="w-6 h-6 inline mr-2"></i>
+                        대시보드
+                    </h1>
+                    <p class="mt-1 text-sm text-gray-600">{{ user.name }}님, 환영합니다!</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-500">사번: {{ user.employee_id }}</p>
+                    <p class="text-sm text-gray-500">권한: 
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{% if user.role == 'admin' %}red{% elif user.role == 'download' %}blue{% else %}green{% endif %}-100 text-{% if user.role == 'admin' %}red{% elif user.role == 'download' %}blue{% else %}green{% endif %}-800">
+                            {% if user.role == 'admin' %}관리자 권한{% elif user.role == 'download' %}다운로드 권한{% else %}입력 권한{% endif %}
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 권한별 메뉴 -->
+    <div class="px-4 sm:px-0">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <!-- 입력 권한 메뉴 -->
+            {% if user.has_permission('input') %}
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center">
+                                <i data-feather="edit-3" class="w-5 h-5 text-green-600"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-gray-900">점검 데이터 입력</h3>
+                            <p class="text-sm text-gray-500">캐스케이드 시스템 점검 데이터를 입력하고 저장합니다.</p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200">
+                            <i data-feather="plus" class="w-4 h-4 mr-2"></i>
+                            새 점검 시작
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 다운로드 권한 메뉴 -->
+            {% if user.has_permission('download') %}
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
+                                <i data-feather="download" class="w-5 h-5 text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-gray-900">데이터 다운로드</h3>
+                            <p class="text-sm text-gray-500">점검 데이터베이스를 다운로드합니다.</p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                            <i data-feather="download" class="w-4 h-4 mr-2"></i>
+                            DB 다운로드
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 관리자 권한 메뉴 -->
+            {% if user.has_permission('admin') %}
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-red-100 rounded-md flex items-center justify-center">
+                                <i data-feather="settings" class="w-5 h-5 text-red-600"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-gray-900">시스템 관리</h3>
+                            <p class="text-sm text-gray-500">사용자 권한 관리 및 데이터베이스 수정</p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button onclick="loadUserManagement()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-200">
+                            <i data-feather="users" class="w-4 h-4 mr-2"></i>
+                            사용자 관리
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 관리자 전용 사용자 관리 섹션 -->
+    {% if user.has_permission('admin') %}
+    <div id="userManagement" class="px-4 sm:px-0 mt-8 hidden">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">
+                    <i data-feather="users" class="w-5 h-5 inline mr-2"></i>
+                    사용자 관리
+                </h3>
+            </div>
+            <div class="p-6">
+                <div id="usersTable" class="overflow-x-auto">
+                    <!-- 사용자 목록이 여기에 로드됩니다 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 통계 섹션 -->
+    <div class="px-4 sm:px-0 mt-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">
+                    <i data-feather="bar-chart" class="w-5 h-5 inline mr-2"></i>
+                    시스템 현황
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-green-600">0</div>
+                        <div class="text-sm text-gray-500">총 점검 완료</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-blue-600">0</div>
+                        <div class="text-sm text-gray-500">이번 달 점검</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-orange-600">0</div>
+                        <div class="text-sm text-gray-500">대기 중인 점검</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 관리자 사용자 관리 기능
+function loadUserManagement() {
+    const userManagement = document.getElementById('userManagement');
+    const usersTable = document.getElementById('usersTable');
+    
+    if (userManagement.classList.contains('hidden')) {
+        userManagement.classList.remove('hidden');
+        
+        // 사용자 목록 로드
+        fetch('/api/users')
+            .then(response => response.json())
+            .then(users => {
+                usersTable.innerHTML = `
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">사용자</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">연락처</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">사번</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">권한</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가입일</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${users.map(user => `
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">${user.name}</div>
+                                            <div class="text-sm text-gray-500">${user.username}</div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.phone}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.employee_id}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <select onchange="updateUserRole(${user.id}, this.value)" class="text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                                            <option value="input" ${user.role === 'input' ? 'selected' : ''}>입력권한</option>
+                                            <option value="download" ${user.role === 'download' ? 'selected' : ''}>다운로드권한</option>
+                                            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>관리자권한</option>
+                                        </select>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                            ${user.is_active ? '활성' : '비활성'}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.created_at}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button onclick="toggleUserActive(${user.id})" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                                            ${user.is_active ? '비활성화' : '활성화'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                feather.replace();
+            })
+            .catch(error => {
+                console.error('Error loading users:', error);
+                usersTable.innerHTML = '<p class="text-red-600">사용자 목록을 불러오는데 실패했습니다.</p>';
+            });
+    } else {
+        userManagement.classList.add('hidden');
+    }
+}
+
+// 사용자 권한 변경
+function updateUserRole(userId, newRole) {
+    fetch(`/api/users/${userId}/role`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ role: newRole })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+        } else {
+            showMessage(data.error || '권한 변경에 실패했습니다.', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating user role:', error);
+        showMessage('권한 변경에 실패했습니다.', 'error');
+    });
+}
+
+// 사용자 활성화/비활성화
+function toggleUserActive(userId) {
+    fetch(`/api/users/${userId}/toggle-active`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            loadUserManagement(); // 목록 새로고침
+            loadUserManagement(); // 다시 열기
+        } else {
+            showMessage(data.error || '상태 변경에 실패했습니다.', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error toggling user active:', error);
+        showMessage('상태 변경에 실패했습니다.', 'error');
+    });
+}
+
+// 메시지 표시 함수
+function showMessage(message, type) {
+    const flashMessages = document.getElementById('flash-messages');
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} bg-${type === 'error' ? 'red' : type === 'success' ? 'green' : 'blue'}-100 border-l-4 border-${type === 'error' ? 'red' : type === 'success' ? 'green' : 'blue'}-500 text-${type === 'error' ? 'red' : type === 'success' ? 'green' : 'blue'}-700 p-4 mb-4 mx-4 mt-4 rounded shadow-lg`;
+    
+    alertDiv.innerHTML = `
+        <div class="flex items-center">
+            <i data-feather="${type === 'error' ? 'alert-circle' : type === 'success' ? 'check-circle' : 'info'}" class="w-5 h-5 mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-auto">
+                <i data-feather="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    `;
+    
+    flashMessages.appendChild(alertDiv);
+    feather.replace();
+    
+    // 5초 후 자동 제거
+    setTimeout(() => {
+        alertDiv.style.transition = 'opacity 0.5s ease-out';
+        alertDiv.style.opacity = '0';
+        setTimeout(() => alertDiv.remove(), 500);
+    }, 5000);
+}
+</script>
+{% endblock %}
