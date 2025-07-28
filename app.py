@@ -4,6 +4,10 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -18,8 +22,18 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# configure the database
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "postgresql://localhost/cascade_system")
+# Supabase 클라이언트 가져오기
+from supabase_client import supabase
+
+# Supabase 연결 확인
+if supabase:
+    logging.info("🚀 Supabase 연결됨 - 클라우드 데이터베이스 사용")
+    # SQLite는 백업용으로만 사용
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///cascade_system_backup.db"
+else:
+    logging.info("💾 로컬 SQLite 사용")
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///cascade_system.db"
+
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
@@ -29,13 +43,14 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # initialize the app with the extension
 db.init_app(app)
 
+# Import and initialize models
+import models
+User, Inspection = models.init_models(db)
+
 with app.app_context():
-    # Import models here so their tables will be created
-    import models  # noqa: F401
     db.create_all()
     
     # Create default admin user if not exists
-    from models import User
     from werkzeug.security import generate_password_hash
     
     admin_user = User.query.filter_by(username='admin').first()
@@ -50,3 +65,8 @@ with app.app_context():
         db.session.add(admin_user)
         db.session.commit()
         logging.info("Default admin user created: admin/admin123")
+
+# Import routes after models are initialized
+import routes
+routes.init_routes(app, db, User, Inspection)
+

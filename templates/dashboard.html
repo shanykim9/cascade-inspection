@@ -47,10 +47,10 @@
                         </div>
                     </div>
                     <div class="mt-4">
-                        <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200">
+                        <a href="{{ url_for('new_inspection') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200">
                             <i data-feather="plus" class="w-4 h-4 mr-2"></i>
                             새 점검 시작
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -72,10 +72,14 @@
                         </div>
                     </div>
                     <div class="mt-4">
-                        <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                        <button onclick="downloadInspectionData()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200 mr-2">
                             <i data-feather="download" class="w-4 h-4 mr-2"></i>
-                            DB 다운로드
+                            CSV 다운로드
                         </button>
+                        <a href="{{ url_for('list_inspections') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                            <i data-feather="list" class="w-4 h-4 mr-2"></i>
+                            목록 보기
+                        </a>
                     </div>
                 </div>
             </div>
@@ -299,6 +303,42 @@ function showMessage(message, type) {
         alertDiv.style.opacity = '0';
         setTimeout(() => alertDiv.remove(), 500);
     }, 5000);
+}
+
+// 점검 데이터 다운로드 함수
+function downloadInspectionData() {
+    fetch('/api/inspections')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showMessage(data.error, 'error');
+                return;
+            }
+            
+            // CSV 형식으로 변환
+            let csv = '장비유형,장비번호,점검날짜,온도(°C),압력(bar),수위(%),가스소비량(m³),효율(%),상태,특이사항,점검자,등록일시\n';
+            
+            data.forEach(inspection => {
+                csv += `"${inspection.equipment_type}","${inspection.equipment_id}","${inspection.inspection_date}","${inspection.temperature || ''}","${inspection.pressure || ''}","${inspection.water_level || ''}","${inspection.gas_consumption || ''}","${inspection.efficiency || ''}","${inspection.status}","${inspection.notes || ''}","${inspection.inspector}","${inspection.created_at}"\n`;
+            });
+            
+            // 파일 다운로드
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `점검데이터_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showMessage('점검 데이터가 성공적으로 다운로드되었습니다.', 'success');
+        })
+        .catch(error => {
+            console.error('Error downloading data:', error);
+            showMessage('데이터 다운로드에 실패했습니다.', 'error');
+        });
 }
 </script>
 {% endblock %}

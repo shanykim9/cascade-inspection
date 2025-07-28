@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}점검 데이터 목록 - 캐스케이드 시스템 점검{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="px-4 py-6 sm:px-0">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">
+                    <i data-feather="list" class="w-6 h-6 inline mr-2"></i>
+                    점검 데이터 목록
+                </h1>
+                <div class="flex space-x-3">
+                    <button onclick="downloadInspectionData()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                        <i data-feather="download" class="w-4 h-4 mr-2"></i>
+                        CSV 다운로드
+                    </button>
+                    <a href="{{ url_for('dashboard') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i data-feather="arrow-left" class="w-4 h-4 mr-2"></i>
+                        대시보드로
+                    </a>
+                </div>
+            </div>
+
+            {% if inspections %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">장비 정보</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">점검 날짜</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">측정값</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">점검자</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">등록일</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for inspection in inspections %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ inspection.equipment_type }}</div>
+                                    <div class="text-sm text-gray-500">{{ inspection.equipment_id }}</div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ inspection.inspection_date.strftime('%Y-%m-%d %H:%M') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">
+                                    {% if inspection.temperature %}온도: {{ inspection.temperature }}°C<br>{% endif %}
+                                    {% if inspection.pressure %}압력: {{ inspection.pressure }}bar<br>{% endif %}
+                                    {% if inspection.water_level %}수위: {{ inspection.water_level }}%<br>{% endif %}
+                                    {% if inspection.gas_consumption %}가스: {{ inspection.gas_consumption }}m³<br>{% endif %}
+                                    {% if inspection.efficiency %}효율: {{ inspection.efficiency }}%{% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if inspection.status == 'normal' %}bg-green-100 text-green-800
+                                    {% elif inspection.status == 'warning' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if inspection.status == 'normal' %}정상
+                                    {% elif inspection.status == 'warning' %}주의
+                                    {% else %}오류{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ inspection.user.name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ inspection.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </td>
+                        </tr>
+                        {% if inspection.notes %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-2 bg-gray-50">
+                                <div class="text-sm text-gray-600">
+                                    <strong>특이사항:</strong> {{ inspection.notes }}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <i data-feather="inbox" class="w-12 h-12 text-gray-400 mx-auto mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">점검 데이터가 없습니다</h3>
+                <p class="text-gray-500 mb-6">아직 등록된 점검 데이터가 없습니다.</p>
+                <a href="{{ url_for('new_inspection') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    <i data-feather="plus" class="w-4 h-4 mr-2"></i>
+                    첫 점검 데이터 입력하기
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// 점검 데이터 다운로드 함수
+function downloadInspectionData() {
+    fetch('/api/inspections')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showMessage(data.error, 'error');
+                return;
+            }
+            
+            // CSV 형식으로 변환
+            let csv = '장비유형,장비번호,점검날짜,온도(°C),압력(bar),수위(%),가스소비량(m³),효율(%),상태,특이사항,점검자,등록일시\n';
+            
+            data.forEach(inspection => {
+                csv += `"${inspection.equipment_type}","${inspection.equipment_id}","${inspection.inspection_date}","${inspection.temperature || ''}","${inspection.pressure || ''}","${inspection.water_level || ''}","${inspection.gas_consumption || ''}","${inspection.efficiency || ''}","${inspection.status}","${inspection.notes || ''}","${inspection.inspector}","${inspection.created_at}"\n`;
+            });
+            
+            // 파일 다운로드
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `점검데이터_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showMessage('점검 데이터가 성공적으로 다운로드되었습니다.', 'success');
+        })
+        .catch(error => {
+            console.error('Error downloading data:', error);
+            showMessage('데이터 다운로드에 실패했습니다.', 'error');
+        });
+}
+
+// 메시지 표시 함수
+function showMessage(message, type) {
+    const flashMessages = document.getElementById('flash-messages');
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} bg-${type === 'error' ? 'red' : type === 'success' ? 'green' : 'blue'}-100 border-l-4 border-${type === 'error' ? 'red' : type === 'success' ? 'green' : 'blue'}-500 text-${type === 'error' ? 'red' : type === 'success' ? 'green' : 'blue'}-700 p-4 mb-4 mx-4 mt-4 rounded shadow-lg`;
+    
+    alertDiv.innerHTML = `
+        <div class="flex items-center">
+            <i data-feather="${type === 'error' ? 'alert-circle' : type === 'success' ? 'check-circle' : 'info'}" class="w-5 h-5 mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-auto">
+                <i data-feather="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    `;
+    
+    flashMessages.appendChild(alertDiv);
+    feather.replace();
+    
+    // 5초 후 자동 제거
+    setTimeout(() => {
+        alertDiv.style.transition = 'opacity 0.5s ease-out';
+        alertDiv.style.opacity = '0';
+        setTimeout(() => alertDiv.remove(), 500);
+    }, 5000);
+}
+</script>
+{% endblock %} 
